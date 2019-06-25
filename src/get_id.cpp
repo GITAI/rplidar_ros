@@ -18,7 +18,8 @@ using namespace rp::standalone::rplidar;
 int main(int argc, char** argv)
 {
   std::string serial_port = "/dev/ttyUSB0";
-  int serial_baudrate = 225600;
+  int serial_baudrate = 256000;
+  RPlidarDriver* drv = NULL;
 
   switch (argc)
   {
@@ -30,11 +31,11 @@ int main(int argc, char** argv)
     serial_baudrate = std::atoi(argv[2]);
     break;
   default:
-    std::cerr << "Usage: " << argv[0] << " [port] [baudrate]" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [port (default: /dev/ttyUSB0)] [baudrate (default: 256000)]" << std::endl;
     return 1;
   }
 
-  RPlidarDriver* drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
+  drv = RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT);
   if (!drv)
   {
     std::cerr << "Failed to create driver instance" << std::endl;
@@ -47,21 +48,24 @@ int main(int argc, char** argv)
     return -1;
   }
 
+  u_result     op_result;
   rplidar_response_device_info_t devinfo;
-  u_result result = drv->getDeviceInfo(devinfo);
-  if (IS_FAIL(result))
+  op_result = drv->getDeviceInfo(devinfo);
+
+  if (IS_FAIL(op_result))
   {
-    if (result == RESULT_OPERATION_TIMEOUT)
-      std::cerr << "Operation timed out" << std::endl;
-    else
-      std::cerr << "Unexpected error (code: " << std::hex << result << ")" << std::endl;
+    // serial number can be retrieved even if timed out.
+    std::cerr << "Failed to get device info (code: " << std::hex << op_result << ")" << std::endl;
+    RPlidarDriver::DisposeDriver(drv);
     return 1;
   }
 
   // print serial number
   for (size_t i = 0; i < 16; ++i)
-    std::cout << std::setw(2) << std::setfill('0') << std::hex << devinfo.serialnum[i];
+    std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)devinfo.serialnum[i];
   std::cout << std::endl;
+
+  RPlidarDriver::DisposeDriver(drv);
 
   return 0;
 }
