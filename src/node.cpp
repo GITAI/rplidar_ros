@@ -83,21 +83,23 @@ void publish_scan(ros::Publisher *pub,
     bool reverse_data = (!inverted && reversed) || (inverted && !reversed);
     if (!reverse_data) {
         for (size_t i = 0; i < node_count; i++) {
+            size_t j = (i + node_count / 2) % node_count;
             float read_value = (float) nodes[i].dist_mm_q2/4.0f/1000;
             if (read_value == 0.0)
-                scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
+                scan_msg.ranges[j] = std::numeric_limits<float>::infinity();
             else
-                scan_msg.ranges[i] = read_value;
-            scan_msg.intensities[i] = (float) (nodes[i].quality >> 2);
+                scan_msg.ranges[j] = read_value;
+            scan_msg.intensities[j] = (float) (nodes[i].quality >> 2);
         }
     } else {
         for (size_t i = 0; i < node_count; i++) {
+            size_t j = (i + node_count / 2) % node_count;
             float read_value = (float)nodes[i].dist_mm_q2/4.0f/1000;
             if (read_value == 0.0)
-                scan_msg.ranges[node_count-1-i] = std::numeric_limits<float>::infinity();
+                scan_msg.ranges[node_count-1-j] = std::numeric_limits<float>::infinity();
             else
-                scan_msg.ranges[node_count-1-i] = read_value;
-            scan_msg.intensities[node_count-1-i] = (float) (nodes[i].quality >> 2);
+                scan_msg.ranges[node_count-1-j] = read_value;
+            scan_msg.intensities[node_count-1-j] = (float) (nodes[i].quality >> 2);
         }
     }
 
@@ -206,7 +208,7 @@ int main(int argc, char * argv[]) {
     nh_private.param<bool>("angle_compensate", angle_compensate, false);
     nh_private.param<std::string>("scan_mode", scan_mode, std::string());
 
-    ROS_INFO("RPLIDAR running on ROS package rplidar_ros. SDK Version:"RPLIDAR_SDK_VERSION"");
+    ROS_INFO_STREAM("RPLIDAR running on ROS package rplidar_ros. SDK Version: " << RPLIDAR_SDK_VERSION);
 
     u_result     op_result;
 
